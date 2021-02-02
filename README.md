@@ -4,8 +4,16 @@ Final project of the Haskell Book
 
 ## Installation
 
+- To build
+  
 ```bash
 stack build
+```
+
+- To intepret `Main` module for incremental development
+
+```bash
+$ stack ghci --main-is fingerd:exe:fingerd
 ```
 
 ## Sample Usage
