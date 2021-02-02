@@ -1,20 +1,48 @@
-name:                fingerd
-version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/githubuser/fingerd#readme
-license:             BSD3
-license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2021 Author name here
-category:            Web
-build-type:          Simple
-cabal-version:       >=1.10
-extra-source-files:  README.md
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: a0575d5e6353ca4c9a369ece49a7a162e060f1161891dfc665579b1dc1689168
+
+name:           fingerd
+version:        0.1.0.0
+description:    Daemon operates over TCP sockets
+category:       CLI
+homepage:       https://github.com/mnhthng-thms/Haskell-Book-Final-fingerd
+author:         MinhTu Thomas Hoang
+maintainer:     MinhTu Thomas Hoang
+copyright:      2021 MinhTu Thomas Hoang
+license:        BSD3
+build-type:     Simple
+extra-source-files:
+    README.md
+
+executable debug
+  main-is: Debug.hs
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -fhide-source-paths -freverse-errors -Wall
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , network
+    , raw-strings-qq
+    , sqlite-simple
+    , text
+  default-language: Haskell2010
 
 executable fingerd
-  hs-source-dirs:      src
-  main-is:             Main.hs
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
+  main-is: Main.hs
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -fhide-source-paths -freverse-errors
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , network
+    , raw-strings-qq
+    , sqlite-simple
+    , text
+  default-language: Haskell2010

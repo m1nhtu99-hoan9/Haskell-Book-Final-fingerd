@@ -1,0 +1,39 @@
+name: fingerd
+version: '0.1.0.0'
+description: Daemon operates over TCP sockets
+category: CLI
+author: MinhTu Thomas Hoang
+maintainer: MinhTu Thomas Hoang
+copyright: 2021 MinhTu Thomas Hoang
+license: BSD3
+homepage: https://github.com/mnhthng-thms/Haskell-Book-Final-fingerd
+
+extra-source-files:
+  - README.md
+
+ghc-options: 
+  - -Wall
+  - -fhide-source-paths # for cleaner output
+  - -freverse-errors    # for cleaner output
+dependencies:
+  - base >=4.7 && <5
+  - network
+  - base >=4.7 && <5
+  - network
+  - bytestring
+  - raw-strings-qq
+  - sqlite-simple
+  - text
+
+executables:
+  debug:
+    main: Debug.hs
+    source-dirs: src
+    ghc-options: -Wall
+    # to clarify that `debug` doesn't depend on `fingerd`
+    other-modules: []
+  fingerd:
+    main: Main.hs
+    source-dirs: src
+    # to clarify that `fingerd` doesn't depend on `debug` 
+    other-modules: []

@@ -1,0 +1,5 @@
+- ignore: {name: "Use camelCase"}
+- ignore: {name: "Redundant as"}
+- ignore: {name: "Redundant do"}
+- ignore: {name: "Redundant return"}
+- ignore: {name: "Redundant guard", whithin: "lrdrNameToTextAnn"}
