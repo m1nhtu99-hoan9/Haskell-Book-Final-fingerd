@@ -29,18 +29,44 @@ import           Database.SQLite.Simple         ( Connection
                                                 , execute_
                                                 , field
                                                 , fromRow
-                                                , open
                                                 , query
                                                 , query_
                                                 , toRow
                                                 )
 import           Database.SQLite.Simple.Types   ( Null(..) ) -- `Null` is a typeclass
 
-import           Network.Socket                 ( Socket )
+
+import           Network.Socket                 ( AddrInfo(addrFlags)
+                                                , AddrInfoFlag(AI_PASSIVE)
+                                                , Socket
+                                                , SocketType(Stream)
+                                                , accept
+                                                , addrFamily
+                                                , close
+                                                , defaultHints
+                                                , defaultProtocol
+                                                , getAddrInfo
+                                                , listen
+                                                , socket
+                                                , withSocketsDo
+                                                )
 import           Network.Socket.ByteString      ( recv
                                                 , sendAll
                                                 )
 import           Text.RawString.QQ              ( r )
+
+main :: IO ()
+main = withSocketsDo $ do
+  addrInfos <- getAddrInfo (Just (defaultHints { addrFlags = [AI_PASSIVE] }))
+                           Nothing
+                           (Just "79")
+  let serverAddr = head addrInfos
+  sock <- socket (addrFamily serverAddr) Stream defaultProtocol
+  -- only one connection open at a time
+  listen sock 1
+  conn <- SQLite.open "finger.db"
+  SQLite.close conn
+  close sock
 
 data User = User
   { userId        :: Integer
@@ -110,12 +136,20 @@ createDb = do
         , "MinhTu Thomas Hoang"
         , "111-222-999"
         ) :: UserRow
-  conn <- open "finger.db"
+  conn <- SQLite.open "finger.db"
   execute_ conn createUsersQuery
   execute conn insertUserQuery meRow
   rows <- query_ conn allUsersQuery
   mapM_ print (rows :: [User])
   SQLite.close conn
+
+showUserBS :: User -> ByteString
+showUserBS (User _ uName sh homeDir rName _) = BS.concat
+  [ "Login: ", encodeUtf8 uName, "\t\t\t\t"
+  , "Name: ", encodeUtf8 rName, "\n"
+  , "Directory: ", encodeUtf8 homeDir, "\t\t\t"
+  , "Shell: ", encodeUtf8 sh, "\n"
+  ]
 
 -- | Use input database connection to query list of all users, 
 -- | then transform them into a newline separated `Text` value.
@@ -128,20 +162,33 @@ returnUsers dbConn soc = do
       newLineSeperated = T.concat $ intersperse "\n" uNames
   sendAll soc (encodeUtf8 newLineSeperated)
 
-showUserBS :: User -> ByteString
-showUserBS (User _ uName sh homeDir rName _) = BS.concat
-  [ "Login: ", encodeUtf8 uName, "\t\t\t\t"
-  , "Name: ", encodeUtf8 rName, "\n"
-  , "Directory: ", encodeUtf8 homeDir, "\t\t\t"
-  , "Shell: ", encodeUtf8 sh, "\n"
-  ]
+-- | Use input database connection to query user whose username 
+-- | matches `Text` input. 
+returnUser :: Connection -> Socket -> Text -> IO ()
+returnUser dbConn soc uName = do
+  -- stripping is needed because the literal data 
+  -- sent for a username query is "username\r\n"
+  maybeUser <- getUser dbConn (T.strip uName)
+  case maybeUser of
+    -- no user by the given username is found
+    Nothing -> do
+      putStrLn ("Couldn't find matching user for username: " <> show uName)
+      return ()
+    Just u -> sendAll soc (showUserBS u)
 
-{-
-  [ "Login: ", encodeUtf8 uName, "\t\t\t\t"
-  , "Name: ", encodeUtf8 rName, "\n"
-  , "Directory: ", encodeUtf8 homeDir, "\t\t\t"
-  , "Shell: ", encodeUtf8 sh, "\n"
-  ]
--}
-main :: IO ()
-main = createDb
+handleQuery :: Connection -> Socket -> IO ()
+handleQuery dbConn soc = do
+  -- receive up to 1024 bytes
+  msg <- recv soc 1024
+  case msg of
+    -- send the list of all user
+    "\r\n" -> returnUsers dbConn soc
+    -- send info of a single user
+    name   -> returnUser dbConn soc $ decodeUtf8 name
+
+handleQueries :: Connection -> Socket -> IO ()
+handleQueries dbConn sock = forever $ do
+  (soc, _) <- accept sock
+  putStrLn "Connection established. Handling query..."
+  handleQuery dbConn soc
+  close soc
